@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.sql.Array;
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.DoublePointer;
@@ -32,8 +33,10 @@ import org.bytedeco.opencv.opencv_videoio.VideoCapture;
  */
 public class Recognizer extends javax.swing.JFrame {
 
+    //criando a thread
     private Recognizer.DaemonThread myThread = null;
 
+    //pegando a webcam
     VideoCapture webSource = null;
     Mat cameraImage = new Mat();
     CascadeClassifier cascade = new CascadeClassifier("C://photos//haarcascade_frontalface_alt.xml");
@@ -44,14 +47,15 @@ public class Recognizer extends javax.swing.JFrame {
 
     String root, firstNamePerson, lastNamePerson, cargoPerson, dataPerson;
     int idPerson;
-
+//conectando a base de dados
     ConnectDatabase con = new ConnectDatabase();
 
     public Recognizer() {
         initComponents();
-        
+        //lendo o .yml de reconhecimento de faces
         recognizer.read("C://photos//classifierLBPH.yml");
         recognizer.setThreshold(80);
+        //ligando a camera
         startCamera();
     }
 
@@ -120,7 +124,7 @@ public class Recognizer extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
+        //desligando a camera
         stopCamera();
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -197,6 +201,7 @@ public class Recognizer extends javax.swing.JFrame {
                                 DoublePointer confianca = new DoublePointer(1);
                                 recognizer.predict(faceCapturada, rotulo, confianca);
                                 int predicao = rotulo.get(0);
+                                //se o usuário não for reconhecido...
                                 if (predicao == -1) {
                                     label_name.setText("Desconhecido");
                                     label_cargo.setText("");
@@ -218,12 +223,12 @@ public class Recognizer extends javax.swing.JFrame {
                                     }
                                 }
                             } catch (Exception e) {
-                                throw new Error(e);
+                                JOptionPane.showMessageDialog(null, "Ocorreu um erro!");
                             }
                         }
 
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Ocorreu um erro no reconhecimento facial!");
                     }
                 }
             }
@@ -234,35 +239,42 @@ public class Recognizer extends javax.swing.JFrame {
         SwingWorker worker = new SwingWorker() {
             @Override
             protected Object doInBackground() throws Exception {
+                //conectando a base de dados
                 con.connect();
                 try {
+                    //fazendo um select utilizando o ID
                     String SQL = "SELECT * FROM person WHERE id = " + String.valueOf(idPerson);
                     con.executeSQL(SQL);
                     while (con.rs.next()) {
+                        //setando os valores retornados
                         label_name.setText(con.rs.getString("first_name") + " " + con.rs.getString("last_name"));
                         label_cargo.setText(con.rs.getString("cargo"));
-
-                        Array ident = con.rs.getArray(2);
-                        String[] person = (String[]) ident.getArray();
                     }
                 } catch (Exception e) {
-                    throw new Error(e);
+                    JOptionPane.showMessageDialog(null, "Erro ao consultar!");
                 }
+                //desconectando do banco
                 con.disconnect();
                 return null;
             }
         };
+        //executando o worker
         worker.execute();
     }
     
     public void stopCamera() {
+        //finalizando a thread
         myThread.runnable = false;
+        //desligando a webcam
         webSource.release();
+        //fechando a janela
         dispose();
     }
 
     public void startCamera() {
+        //pegando a webcam
         webSource = new VideoCapture(0);
+        //iniciando a thread
         myThread = new Recognizer.DaemonThread();
         Thread t = new Thread(myThread);
         t.setDaemon(true);

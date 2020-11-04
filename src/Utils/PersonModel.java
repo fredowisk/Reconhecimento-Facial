@@ -15,6 +15,7 @@ public class PersonModel {
     public PersonModel() {
     }
     
+    //construtor
     public PersonModel(int id, String first_name, String last_name, String cargo, String data) {
         this.id = id;
         this.first_name = first_name;

@@ -12,7 +12,7 @@ public class UserModel {
     
     public UserModel(){
     }
-    
+    //Construtor
     public UserModel(int id, String username, String password) {
         this.id = id;
         this.username = username;

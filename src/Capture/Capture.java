@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.IntBuffer;
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 import org.bytedeco.javacpp.BytePointer;
 import static org.bytedeco.opencv.global.opencv_core.CV_32SC1;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.imencode;
@@ -37,9 +38,10 @@ import org.opencv.imgcodecs.Imgcodecs;
  * @author Fred
  */
 public class Capture extends javax.swing.JFrame {
+//Criando uma Thread
 
     private Capture.DaemonThread myThread = null;
-
+//Iniciando as variaveis
     VideoCapture webSource = null;
     Mat cameraImage = new Mat();
     CascadeClassifier cascade = new CascadeClassifier("C://photos//haarcascade_frontalface_alt.xml");
@@ -48,8 +50,9 @@ public class Capture extends javax.swing.JFrame {
 
     String root, firstNamePerson, lastNamePerson, cargoPerson, dataPerson;
     int numSamples = 25, sample = 1, idPerson;
-
+//Conectando a base de dados
     ConnectDatabase con = new ConnectDatabase();
+//Construtor recebendo todos os parâmetros
 
     public Capture(int id, String fName, String lName, String cargo, String data) {
         initComponents();
@@ -59,12 +62,11 @@ public class Capture extends javax.swing.JFrame {
         lastNamePerson = lName;
         cargoPerson = cargo;
         dataPerson = data;
-
+//iniciando a camera
         startCamera();
     }
 
     private Capture() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @SuppressWarnings("unchecked")
@@ -165,7 +167,7 @@ public class Capture extends javax.swing.JFrame {
     private javax.swing.JLabel label_photo;
     private javax.swing.JButton saveButton;
     // End of variables declaration//GEN-END:variables
-
+//classe que cria a thread
     class DaemonThread implements Runnable {
 
         protected volatile boolean runnable = false;
@@ -175,6 +177,7 @@ public class Capture extends javax.swing.JFrame {
             synchronized (this) {
                 while (runnable) {
                     try {
+                        //pegando a imagem da camera
                         if (webSource.grab()) {
                             webSource.retrieve(cameraImage);
                             Graphics g = label_photo.getGraphics(); //mostra a imagem no jlabel
@@ -184,7 +187,6 @@ public class Capture extends javax.swing.JFrame {
 
                             Mat imageGray = new Mat(); //imagem pb
                             cvtColor(imageColor, imageGray, COLOR_BGRA2GRAY);
-//                            flip(cameraImage, cameraImage, +1);
 
                             RectVector detectedFaces = new RectVector(); //face detectada
                             cascade.detectMultiScale(imageColor, detectedFaces, 1.1, 1, 1, new Size(150, 150), new Size(500, 500));
@@ -198,24 +200,27 @@ public class Capture extends javax.swing.JFrame {
                                 opencv_imgproc.resize(face, face, new Size(160, 160));
 
                                 if (saveButton.getModel().isPressed()) { //quando apertar o botão saveButton
-                                    
-                                        if (sample <= numSamples) {
+
+                                    if (sample <= numSamples) {
 //                                        salva a imagem cortada [160,160]
 //                                        nome do arquivo: idpessoa + a contagem de fotos. ex: person.10(id).6(sexta foto).jpg
-                                            String cropped = "C:\\photos\\person." + idPerson + "." + sample + ".jpg";
-                                            imwrite(cropped, face);
+                                        String cropped = "C:\\photos\\person." + idPerson + "." + sample + ".jpg";
+                                        imwrite(cropped, face);
 
-                                            //System.out.println("Foto " + amostra + " capturada\n");
-                                            count_label.setText(String.valueOf(sample) + "/25");
-                                            sample++;
-                                        }
-                                        if (sample > 25) {
-                                            generate();
-                                            insertDatabase(); //insere os dados no banco
-
-                                            System.out.println("File Generated");
-                                            stopCamera(); // e fecha a camera
-                                        }
+                                        //alterando o valor do contador antes do /25  
+                                        count_label.setText(String.valueOf(sample) + "/25");
+                                        //iterando
+                                        sample++;
+                                    }
+                                    //se tiver mais de 25 fotos...
+                                    if (sample > 25) {
+                                        //chame o metodo generate
+                                        generate();
+                                        insertDatabase(); //insere os dados no banco
+                                        //imprime que as fotos foram salvas
+                                        System.out.println("File Generated");
+                                        stopCamera(); // e fecha a camera
+                                    }
 
                                 }
                             }
@@ -231,22 +236,23 @@ public class Capture extends javax.swing.JFrame {
                                     }
                                 }
                             } catch (Exception e) {
-                                throw new Error(e);
+                                JOptionPane.showMessageDialog(null, "Ocorreu um erro!");
                             }
                         }
 
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Erro ao capturar!");
                     }
                 }
             }
         }
     }
 
-
     public void generate() {
+        //pegando o diretorio onde as fotos ficarão salvas
         File directory = new File("C://photos//");
         FilenameFilter filter = new FilenameFilter() {
+            //filtrando as fotos
             @Override
             public boolean accept(File dir, String name) {
                 return name.endsWith(".jpg") || name.endsWith(".png");
@@ -259,22 +265,27 @@ public class Capture extends javax.swing.JFrame {
         IntBuffer labelsBuffer = labels.createBuffer();
 
         int counter = 0;
+        //para cada imagem...
         for (File image : files) {
             Mat photo;
+            //deixe a foto cinza
             photo = imread(image.getAbsolutePath(), Imgcodecs.IMREAD_GRAYSCALE);
             int idP = Integer.parseInt(image.getName().split("\\.")[1]);
+            //faça um resize e deixe ela 160,160
             opencv_imgproc.resize(photo, photo, new Size(160, 160));
 
             photos.put(counter, photo);
             labelsBuffer.put(counter, idP);
             counter++;
         }
-
+//pegando o reconhecedor de faces
         FaceRecognizer lbph = LBPHFaceRecognizer.create();
         lbph.train(photos, labels);
+        //salve ele no arquivo yml
         lbph.save("C://photos//classifierLBPH.yml");
     }
 
+    //salvando no banco
     public void insertDatabase() {
         PersonController cod = new PersonController();
         PersonModel mod = new PersonModel();
@@ -287,15 +298,21 @@ public class Capture extends javax.swing.JFrame {
         cod.insert(mod);
 
     }
-
+//desligando a camera
     public void stopCamera() {
+        //desligando a thread
         myThread.runnable = false;
+        //liberando a camera
         webSource.release();
+        //fechando a janela
         dispose();
     }
 
+    //ligando a camera
     public void startCamera() {
+        //pegando a camera
         webSource = new VideoCapture(0);
+        //iniciando a thread
         myThread = new Capture.DaemonThread();
         Thread t = new Thread(myThread);
         t.setDaemon(true);

@@ -8,7 +8,7 @@ import javax.swing.JOptionPane;
  * @author Frederico Roberto Parreira
  */
 public class Login extends javax.swing.JFrame {
-
+//Conectando ao banco
     ConnectDatabase con = new ConnectDatabase();
 
     public Login() {
@@ -22,11 +22,11 @@ public class Login extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        txt_user = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
         txt_pass = new javax.swing.JPasswordField();
         jButton2 = new javax.swing.JButton();
         jButton1 = new javax.swing.JButton();
+        txt_user = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Security System - Login");
@@ -40,9 +40,6 @@ public class Login extends javax.swing.JFrame {
 
         jLabel2.setText("User");
         jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 100, 30, -1));
-
-        txt_user.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(200, 200, 200)));
-        jPanel2.add(txt_user, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 130, 330, 30));
 
         jLabel3.setFont(new java.awt.Font("Tahoma", 1, 24)); // NOI18N
         jLabel3.setText("Login");
@@ -76,6 +73,7 @@ public class Login extends javax.swing.JFrame {
             }
         });
         jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 290, 130, -1));
+        jPanel2.add(txt_user, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 132, 330, 30));
 
         getContentPane().add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 400, 360));
 
@@ -84,31 +82,38 @@ public class Login extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        //Deixando o criador de conta visivel
         new CreateAccount().setVisible(true);
+        //fechando a tela de login
         dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        //iniciando uma conexão
         con.connect();
         //pegando os inputs de usuario e senha
         String user = txt_user.getText();
-        String password = txt_pass.getText();
+        String password = String.valueOf(txt_pass.getPassword());
         //verificando se a senha está correta
         con.validate(user, password);
+        //desconectando do banco, para poupar memoria
+        con.disconnect();
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    public void Validate(String user, String pass) {
+    public void Validate(String user, boolean connected) {
         try {
-            if (txt_user.getText().equals(user) && txt_pass.getText().equals(pass)) {
-                JOptionPane.showMessageDialog(null, "Seja bem vindo " + user + "!");
-                new Menu(user).setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(null, "Falha no login! Tente novamente.");
-            }
+            //se o usuário conseguir se conectar...
+                if (connected) {
+                    //imprima:
+                    JOptionPane.showMessageDialog(null, "Seja bem vindo " + user + "!");
+                    //chame a tela de Menu
+                    new Menu(user).setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Falha no login! Tente novamente.");
+                }
         } catch (Exception e) {
-            throw new Error(e);
+            JOptionPane.showMessageDialog(null, "Ocorreu um erro na validação!");
         }
-        con.disconnect();
     }
 
     /**

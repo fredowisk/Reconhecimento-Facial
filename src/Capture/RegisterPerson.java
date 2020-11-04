@@ -1,17 +1,20 @@
 package Capture;
 
 import Utils.ConnectDatabase;
+import javax.swing.JOptionPane;
 
 /**
  *
  * @author Fred
  */
 public class RegisterPerson extends javax.swing.JFrame {
+//conectando ao banco
 
     ConnectDatabase con = new ConnectDatabase();
 
     public RegisterPerson() {
         initComponents();
+        //consultando o id do usuário
         showIdUser();
     }
 
@@ -32,6 +35,7 @@ public class RegisterPerson extends javax.swing.JFrame {
         jLabel5 = new javax.swing.JLabel();
         txt_data = new javax.swing.JFormattedTextField();
         jButton1 = new javax.swing.JButton();
+        btnVoltar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Register Person");
@@ -50,7 +54,7 @@ public class RegisterPerson extends javax.swing.JFrame {
         txt_id_label.setText("1");
         jPanel2.add(txt_id_label, new org.netbeans.lib.awtextra.AbsoluteConstraints(-10, 0, 570, 50));
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 10, 560, 50));
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 40, 560, 50));
 
         jPanel3.setBackground(new java.awt.Color(255, 255, 255));
         jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -92,6 +96,14 @@ public class RegisterPerson extends javax.swing.JFrame {
         });
         jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(220, 310, 150, 40));
 
+        btnVoltar.setText("Voltar");
+        btnVoltar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnVoltarActionPerformed(evt);
+            }
+        });
+        jPanel1.add(btnVoltar, new org.netbeans.lib.awtextra.AbsoluteConstraints(450, 10, 80, -1));
+
         getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 590, 400));
 
         setSize(new java.awt.Dimension(588, 436));
@@ -99,15 +111,20 @@ public class RegisterPerson extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-
+//iniciando as variaveis
         String fName = txt_first_name.getText();
         String lName = txt_last_name.getText();
         String cargo = txt_cargo.getText();
         String data = txt_data.getText();
         int id = Integer.parseInt(txt_id_label.getText().replace("ID: ", ""));
-
+//passando as variaveis como parametro para o componente capture, e o deixando visivel
         new Capture(id, fName, lName, cargo, data).setVisible(true);
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
+        //fechando a janela
+        dispose();
+    }//GEN-LAST:event_btnVoltarActionPerformed
 
     public static void main(String args[]) {
         /* Set the Windows look and feel */
@@ -141,6 +158,7 @@ public class RegisterPerson extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnVoltar;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -156,18 +174,22 @@ public class RegisterPerson extends javax.swing.JFrame {
     private javax.swing.JTextField txt_last_name;
     // End of variables declaration//GEN-END:variables
 
+    //procurando o id do usuário
     private void showIdUser() {
+        //conectando ao banco
         con.connect();
+        //executando a SQL
         con.executeSQL("SELECT * FROM person ORDER BY id DESC LIMIT 1");
         try {
+            //pegando o primeiro resultado
             con.rs.first();
-
-            txt_id_label.setText(String.valueOf(con.rs.getInt("id")));
-            int id = Integer.parseInt(txt_id_label.getText());
-            id++;
+//pegando o ID que voltou do banco de dados
+            int id = con.rs.getInt("id");
+            //setando ele no label
             txt_id_label.setText("ID: " + String.valueOf(id));
 
         } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Erro ao procurar usuário");
         }
     }
 }
